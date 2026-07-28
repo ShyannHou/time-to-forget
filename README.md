@@ -14,21 +14,21 @@ every number and figure in the paper can be checked without rerunning anything.
 ## 1. Repository layout
 
 ```
-sbm/          synthetic stochastic-block-model experiments (no external data needed)
-elliptic/     Elliptic (Bitcoin) real-data experiments
-dblp/         DBLP negative-control detection
-figures/      plotting scripts; all read from results/, none hardcode numbers
-results/      saved JSON / NPZ outputs of every script below
+sbm/               synthetic stochastic-block-model experiments (no external data needed)
+elliptic/          Elliptic (Bitcoin) real-data experiments + data builder
+dblp/              DBLP detection and downstream forgetting experiments
+figures/           plotting scripts; all read from results/, none hardcode numbers
+results/           saved JSON / NPZ outputs of every script below
+requirements.txt   exact package versions (see ENVIRONMENT.md)
+ENVIRONMENT.md     Python/CUDA/package versions, exported from the real run environment
+DATA.md            exact Elliptic/DBLP file formats and construction rules
 ```
 
 ## 2. Requirements
 
-```
-python >= 3.9
-torch, dgl            # GCN via dgl.nn.GraphConv
-numpy, scipy          # scipy.spatial.distance.cdist for the MMD kernel
-matplotlib            # figures only
-```
+Exact versions that produced every saved result in `results/` are in
+[`ENVIRONMENT.md`](ENVIRONMENT.md) / [`requirements.txt`](requirements.txt) (`torch`,
+`dgl`, `numpy`, `scipy`, `matplotlib`, `scikit-learn`, Python 3.9, CUDA 12.1).
 
 The SBM experiments run on CPU in a few minutes each. The Elliptic experiments were run
 on a single GPU.
@@ -37,17 +37,12 @@ on a single GPU.
 
 **SBM** needs no external data: graphs are generated on the fly from a fixed seed.
 
-**Elliptic** expects `data/elliptic/elliptic_graphs.pkl`, a pickled list of 49 DGL graphs
-with `ndata["x"]` (165 features) and `ndata["y"]` (1 = illicit, 0 = licit, -1 = unknown),
-built from the public
-[Elliptic Data Set](https://www.kaggle.com/datasets/ellipticco/elliptic-data-set).
-Override the location with `--data` (or `ELLIPTIC_DIR` for `elliptic_policy.py`).
-
-**DBLP** expects a directory of per-year snapshots (`sub_graph_<i>_by_edges` plus a
-`statistics` file giving the number of snapshots), derived from the public
-[ArnetMiner/DBLP](https://www.aminer.org/citation) citation data. Pass it with `--path`.
-
-Both real datasets are redistributed by their original providers, not here.
+**Elliptic** and **DBLP** are redistributed by their original providers, not here. See
+[`DATA.md`](DATA.md) for the exact file formats expected (`ndata["x"]`/`ndata["y"]`
+conventions, edge/self-loop rules, mask files) and the `elliptic/elliptic_build.py`
+script that builds `data/elliptic/elliptic_graphs.pkl` from the raw Elliptic CSVs.
+Override the Elliptic location with `--data` (or `ELLIPTIC_DIR` for
+`elliptic_policy.py`); pass the DBLP snapshot directory with `--path`/`--data`.
 
 ## 4. Reproducing the experiments
 
@@ -69,6 +64,9 @@ forget accuracy over 5 seeds.
 ### 4.2 Elliptic
 
 ```bash
+# build data/elliptic/elliptic_graphs.pkl from the raw Elliptic CSVs first (see DATA.md)
+ELLIPTIC_RAW_DIR=/path/to/raw ELLIPTIC_OUT_DIR=data/elliptic python elliptic/elliptic_build.py
+
 python elliptic/elliptic_forget.py --A 1-42 --B 43-49 --out results/elliptic/elliptic_forget_sharp.json
 python elliptic/elliptic_forget.py --A 1-34 --B 35-49 --out results/elliptic/elliptic_forget_broad.json
 python elliptic/elliptic_ratio.py  --out results/elliptic/elliptic_ratio.json

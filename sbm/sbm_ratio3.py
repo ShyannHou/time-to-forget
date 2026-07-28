@@ -85,7 +85,7 @@ for K in (2,3,5):
             R[f"{K}-{ct}-rho{rho}_std"]=float(np.std(accs))
             R[f"{K}-{ct}-rho{rho}_per_seed"]=[float(x) for x in accs]
         print(f"[K={K} {ct}] done",flush=True)
-json.dump(R,open("sbm_ratio3_results.json","w"),indent=2)
+json.dump(R,open("results/sbm/sbm_ratio3_results.json","w"),indent=2)
 print("=== summary (rho=0.9, A-majority) ===")
 for K in (2,3,5):
     for ct in ("concept","reorder"):

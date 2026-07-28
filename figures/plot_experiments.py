@@ -1,9 +1,12 @@
-"""SBM detection and forgetting figures, drawn from sbm_full_results.json and
-sbm_policy_results.json."""
 import matplotlib;matplotlib.use("Agg");import matplotlib.pyplot as plt,numpy as np,json,os
-good="#2E8B57";bad="#C0392B";orange="#E67E22";blue="#2C6FBB"
+plt.rcParams.update({
+    "font.family": "serif", "font.serif": ["Times New Roman", "DejaVu Serif"],
+    "mathtext.fontset": "stix", "axes.linewidth": 0.8, "xtick.direction": "in",
+    "ytick.direction": "in", "ytick.right": True,
+})
+good="#2f5233";bad="#7a1f1f";orange="#b5651d";blue="#1a3a5c"
 R=json.load(open("results/sbm/sbm_full_results.json"));P=json.load(open("results/sbm/sbm_policy_results.json"))
-os.makedirs("out_experiments",exist_ok=True)
+os.makedirs("figures/out",exist_ok=True)
 cls=[2,3,5];CT=["orderkept","reorder","concept","degreeregen"];CTL=["order-kept","reorder","concept","degree-regen"]
 
 # ---- Fig 1: detection MMD across change types (per K) ----
@@ -44,17 +47,39 @@ axes[0].set_ylabel("accuracy on regime-B test")
 fig.suptitle("Downstream forgetting across the four change types (balanced 100A+100B)",fontsize=11)
 fig.tight_layout();fig.savefig("figures/out/fig_forget_by_change.png",dpi=140)
 
-# ---- Fig 4: memory-policy + warm-start ----
-fig,axes=plt.subplots(1,2,figsize=(11,4.2))
-for ax,ct,title in [(axes[0],"concept","concept (degree-relabel)"),(axes[1],"reorder","reorder")]:
-    arms=["stale","no-forget","soft-0.3","soft-0.5","hard-scratch","hard-warm"]
-    labs=["stale","no-forget","soft .3","soft .5","hard\\nscratch","hard\\nwarm"]
-    for K,col in zip((2,3,5),(blue,orange,"#7D3C98")):
+# ---- Fig 4: memory-policy (side-by-side, no panel titles) ----
+arms=["stale","no-forget","soft-0.3","soft-0.5","hard-scratch"]
+labs=["stale","no-forget","soft .3","soft .5","hard-forget"]
+styles={2:("-","o"),3:("--","s"),5:(":","^")}
+purple="#5b3a6e"
+
+fig,axes=plt.subplots(1,2,figsize=(14,5.5))
+for ax,ct in [(axes[0],"concept"),(axes[1],"reorder")]:
+    for K,col in zip((2,3,5),(blue,orange,purple)):
         y=[P[f"{K}-{ct}"][a] for a in arms]
-        ax.plot(range(len(arms)),y,"-o",color=col,label=f"{K}-class")
-    ax.set_xticks(range(len(arms)));ax.set_xticklabels(labs,fontsize=8)
-    ax.set_title(title);ax.set_ylim(0,1.05)
-    if ct=="concept": ax.set_ylabel("accuracy on regime-B test");ax.legend(fontsize=8)
-fig.suptitle("Post-alarm memory policy: soft-forget recovers most of hard-forget's benefit",fontsize=11)
-fig.tight_layout();fig.savefig("figures/out/fig_memory_policy.png",dpi=140)
-print("saved 4 figures to out_experiments/")
+        ls,mk=styles[K]
+        ax.plot(range(len(arms)),y,linestyle=ls,marker=mk,color=col,markersize=6,linewidth=1.3,
+                 markeredgewidth=0.6,markeredgecolor="black",label=f"{K}-class")
+    ax.set_xticks(range(len(arms)));ax.set_xticklabels(labs,fontsize=10)
+    ax.set_ylim(0,1.05)
+    ax.grid(alpha=0.25,linewidth=0.5); ax.tick_params(labelsize=9.5)
+    if ct=="concept": ax.set_ylabel("accuracy on regime-$B$ test",fontsize=11);ax.legend(fontsize=9.5,frameon=False)
+fig.tight_layout();fig.savefig("figures/out/fig_memory_policy.png",dpi=200,bbox_inches="tight")
+print("saved figures/out/fig_memory_policy.png")
+
+# ---- Fig 4b: memory-policy (stacked, no panel titles) ----
+fig_s,axes_s=plt.subplots(2,1,figsize=(7.5,9.0),sharex=True)
+for ax,ct in [(axes_s[0],"concept"),(axes_s[1],"reorder")]:
+    for K,col in zip((2,3,5),(blue,orange,purple)):
+        y=[P[f"{K}-{ct}"][a] for a in arms]
+        ls,mk=styles[K]
+        ax.plot(range(len(arms)),y,linestyle=ls,marker=mk,color=col,markersize=7,linewidth=1.5,
+                 markeredgewidth=0.7,markeredgecolor="black",label=f"{K}-class")
+    ax.set_ylim(0,1.05)
+    ax.grid(alpha=0.25,linewidth=0.5); ax.tick_params(labelsize=10.5)
+    ax.set_ylabel("accuracy on regime-$B$ test",fontsize=11.5)
+axes_s[0].legend(fontsize=10.5,frameon=False)
+axes_s[1].set_xticks(range(len(arms)));axes_s[1].set_xticklabels(labs,fontsize=11)
+fig_s.tight_layout();fig_s.savefig("figures/out/fig_memory_policy_stacked.png",dpi=200,bbox_inches="tight")
+print("saved figures/out/fig_memory_policy_stacked.png")
+print("saved 4 figures to figures/out/")

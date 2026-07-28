@@ -89,4 +89,4 @@ for K in (2,3,5):
         R[f"{K}-{ct}"].update({f"{a}_std":float(np.std(res[a])) for a in ARMS})
         R[f"{K}-{ct}"].update({f"{a}_per_seed":[float(x) for x in res[a]] for a in ARMS})
         print(f"[{K}-{ct}] "+"  ".join(f"{a}={np.mean(res[a]):.3f}" for a in ARMS),flush=True)
-json.dump(R,open("sbm_policy_results.json","w"),indent=2);print("saved sbm_policy_results.json")
+json.dump(R,open("results/sbm/sbm_policy_results.json","w"),indent=2);print("saved results/sbm/sbm_policy_results.json")

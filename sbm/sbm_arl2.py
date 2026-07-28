@@ -1,11 +1,3 @@
-"""ARL0-calibrated detection metrics on SBM streams for K = 2, 3, 5.
-
-The unsupervised score is a 5-snapshot sliding-window MMD; the supervised score is
-the frozen model's loss on a held-out monitoring node mask. Thresholds are selected
-by Monte Carlo against a target in-control ARL0 and then re-estimated on an
-independent batch of in-control runs, reported with a 95% CI and the number of
-horizon-censored runs. A 300-step in-control horizon is used to limit censoring;
-runs that never fire are counted at the full horizon length."""
 import json, numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
 from scipy.spatial.distance import cdist
@@ -53,13 +45,7 @@ def score_stream_unsup(ref,graphs):
         win.append(gembed(g));out.append(mmd2(np.array(win[-W:]),ref) if len(win)>=W else 0.0)
     return out
 def eval_detector(name,cal,score_in,score_change):
-    """Threshold selection and the reported ARL0 now use two INDEPENDENT Monte
-    Carlo batches (r in [0,MC) for selection, r in [MC,2*MC) for evaluation -- score_in's
-    own rng seed depends on r, so these are independent draws, not the same batch reused).
-    Also reports a 95% CI (normal approx, sigma/sqrt(n)) and the right-censoring rate (the
-    fraction of horizon-length runs that never crossed h* -- IN_HORIZON is used as their
-    ARL contribution, a standard but optimistic censoring convention)."""
-    hs=np.arange(0.2,10,0.1);arl={h:[] for h in hs}  # rescaled for the paper's Eq.6 formula (smaller typical magnitude); still auto-checked for boundary
+    hs=np.arange(0.2,10,0.1);arl={h:[] for h in hs}
     for r in range(MC):
         sc=score_in(r)
         for h in hs:
@@ -84,7 +70,9 @@ def eval_detector(name,cal,score_in,score_change):
           f"delay={np.mean(delays) if delays else float('nan'):.1f}  det-rate={det/MC:.2f}",flush=True)
     return {"name":name,"h_star":float(h_star),"arl0_selection_batch":float(arl_mean[h_star]),
             "arl0_independent_eval":arl_eval,"arl0_ci95":list(ci),"censored_of_MC":[eval_censored,MC],
-            "delay_mean":float(np.mean(delays)) if delays else None,"det_rate":det/MC}
+            "delay_mean":float(np.mean(delays)) if delays else None,
+            "delay_std":float(np.std(delays)) if delays else None,
+            "delays_per_run":[int(x) for x in delays],"det_rate":det/MC}
 
 ARL_RESULTS={}
 for K in (2,3,5):
@@ -107,11 +95,9 @@ for K in (2,3,5):
     ARL_RESULTS[f"K={K} UNSUP reorder"]=eval_detector(f"K={K} UNSUP reorder",cal,in_unsup,chg_re)
     # ---- supervised: concept ----
     torch.manual_seed(K);rngT=np.random.default_rng(800+K)
-    mb_rng=np.random.default_rng(9800+K)  # local generator, not global np.random
+    mb_rng=np.random.default_rng(9800+K)
     idxN=np.random.default_rng(12345).permutation(N)
     trm=torch.zeros(N,dtype=torch.bool);trm[idxN[:40]]=True
-    # monitoring loss must be evaluated on a mask disjoint from the classifier's
-    # own training mask, otherwise the in-control loss is partly a training-set (in-sample) loss.
     mom=torch.zeros(N,dtype=torch.bool);mom[idxN[40:60]]=True
     Atr=[sbm(base,cbase,q,K,rngT) for _ in range(30)];yA=torch.tensor(base)
     m=GCN(K);o=torch.optim.Adam(m.parameters(),lr=1e-2,weight_decay=5e-4)
@@ -130,6 +116,6 @@ for K in (2,3,5):
         Bg=[sbm(base,cbase,q,K,rng) for _ in range(20)];yB=torch.tensor(degree_labels_avg(Bg,K))
         return [loss_of(g,yA) for g in A]+[loss_of(g,yB) for g in Bg]
     ARL_RESULTS[f"K={K} SUP concept"]=eval_detector(f"K={K} SUP concept",cal_sup(),in_sup,chg_sup_concept)
-json.dump(ARL_RESULTS,open("sbm_arl2_results.json","w"),indent=2)
+json.dump(ARL_RESULTS,open("results/sbm/sbm_arl2_results.json","w"),indent=2)
 print("saved sbm_arl2_results.json")
 print("done")

@@ -1,13 +1,3 @@
-"""ARL0-calibrated SBM detection using the literal pointwise nonconformity score.
-
-Replaces the sliding-window unsupervised score with the single-snapshot form
-
-  T_t = 1/(m(m-1)) sum_{i != i'} k(r_i, r_i') + k(z_t, z_t) - (2/m) sum_i k(r_i, z_t)
-
-where the reference standardization and RBF bandwidth are fixed once from the
-reference set and never depend on z_t. The Monte-Carlo protocol, change types and
-supervised-concept score match the windowed experiment, so the two can be compared
-directly."""
 import json, numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
 from scipy.spatial.distance import cdist
@@ -91,7 +81,9 @@ def eval_detector(name,cal,score_in,score_change):
           f"delay={np.mean(delays) if delays else float('nan'):.1f}  det-rate={det/MC:.2f}",flush=True)
     return {"name":name,"h_star":float(h_star),"arl0_selection_batch":float(arl_mean[h_star]),
             "arl0_independent_eval":arl_eval,"arl0_ci95":list(ci),"censored_of_MC":[eval_censored,MC],
-            "delay_mean":float(np.mean(delays)) if delays else None,"det_rate":det/MC}
+            "delay_mean":float(np.mean(delays)) if delays else None,
+            "delay_std":float(np.std(delays)) if delays else None,
+            "delays_per_run":[int(x) for x in delays],"det_rate":det/MC}
 
 ARL_RESULTS={}
 for K in (2,3,5):
@@ -136,6 +128,6 @@ for K in (2,3,5):
         Bg=[sbm(base,cbase,q,K,rng) for _ in range(20)];yB=torch.tensor(degree_labels_avg(Bg,K))
         return [loss_of(g,yA) for g in A]+[loss_of(g,yB) for g in Bg]
     ARL_RESULTS[f"K={K} SUP concept"]=eval_detector(f"K={K} SUP concept",cal_sup(),in_sup,chg_sup_concept)
-json.dump(ARL_RESULTS,open("sbm_pointwise_arl_results.json","w"),indent=2)
+json.dump(ARL_RESULTS,open("results/sbm/sbm_pointwise_arl_results.json","w"),indent=2)
 print("saved sbm_pointwise_arl_results.json")
 print("done")

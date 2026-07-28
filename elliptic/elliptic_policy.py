@@ -132,6 +132,6 @@ def main():
          "per_seed":{a:R[a] for a in ARMS},
          "mean":{a:float(np.mean(R[a])) for a in ARMS},
          "std":{a:float(np.std(R[a])) for a in ARMS}}
-    json.dump(out,open("elliptic_policy_results.json","w"),indent=2)
+    json.dump(out,open("results/elliptic/elliptic_policy_results.json","w"),indent=2)
     print("saved elliptic_policy_results.json")
 if __name__=="__main__": main()

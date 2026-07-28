@@ -83,8 +83,11 @@ r_cal = np.random.default_rng(710 + K)
 cal_graphs = [sbm(base, p0, q, K, r_cal) for _ in range(64)]
 cal = [pointwise_score(gnn_embed(model, g), ref_stats) for g in cal_graphs]
 
-# the h* value already selected for this K, reorder, in the ARL calibration run
-H_STAR = {2: 3.3, 3: 2.2, 5: 2.0}[K]
+# h* is read from the saved ARL calibration result, not hardcoded, so a rerun of
+# sbm_pointwise_arl_gnn_embed.py is automatically reflected here.
+with open("results/sbm/sbm_pointwise_arl_gnn_embed_results.json") as f:
+    _arl = json.load(f)
+H_STAR = _arl[f"K={K} GNNEMBED-POINTWISE reorder"]["h_star"]
 
 # one representative change stream: CH in-control + POST post-change (reorder)
 rng = np.random.default_rng(3000 + K * 100 + SEED)

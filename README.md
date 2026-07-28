@@ -90,7 +90,17 @@ python dblp/conformal_stream_gnn_embed.py --kind elliptic --path data/elliptic -
 ```bash
 python dblp/conformal_stream.py --kind dblp --path <dblp-snapshot-dir> --incontrol 6 --out results/dblp
 python dblp/conformal_stream_gnn_embed.py --kind dblp --path <dblp-snapshot-dir> --incontrol 6 --out results/dblp
+# downstream stale / cumulative / finetune / hard-forget comparison (natural, real field-of-study labels)
+python dblp/dblp_forget_experiment.py --data <dblp-snapshot-dir> --pairs "0:9;0:8;1:9;8:9;0,1,2:7,8,9" \
+    --seeds 5 --epochs 200 --out results/dblp
 ```
+
+`results/dblp/dblp_forget_results.json` currently included in this repo was produced with a
+reduced `--pairs "0:9;8:9" --seeds 3 --epochs 100` for a fast sanity check; the
+forget-minus-cumulative gap is small either way (this run: -0.006 for splice 0->9, +0.001
+for the adjacent low-conflict control 8->9), consistent with the paper's claim that
+retaining data remains appropriate on DBLP, but the exact reported magnitude needs the
+full 5-seed/200-epoch/5-pair run above to match the paper precisely.
 
 ### 4.4 Figures
 

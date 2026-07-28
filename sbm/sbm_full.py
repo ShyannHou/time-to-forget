@@ -54,10 +54,11 @@ def mmd2(X,Y):
 class GCN(nn.Module):
     def __init__(s,K):super().__init__();s.c1=GraphConv(4,64,allow_zero_in_degree=True);s.c2=GraphConv(64,K,allow_zero_in_degree=True);s.dp=nn.Dropout(0.5)
     def forward(s,g,x):return s.c2(g,s.dp(F.relu(s.c1(g,x))))
-def train(graphs,labels,mask,vg,vl,vmask,K,dev,ep=100,mb=10,mb_rng=None):
-    # minibatch sampling uses an explicit local Generator, not global np.random state.
+def train(graphs,labels,mask,vg,vl,vmask,K,dev,ep=100,mb=10,mb_rng=None,init=None):
     if mb_rng is None: mb_rng=np.random.default_rng()
-    m=GCN(K).to(dev);o=torch.optim.Adam(m.parameters(),lr=1e-2,weight_decay=5e-4);best=-1;bs=None;idx=np.arange(len(graphs))
+    m=GCN(K).to(dev)
+    if init is not None: m.load_state_dict(init)
+    o=torch.optim.Adam(m.parameters(),lr=1e-2,weight_decay=5e-4);best=-1;bs=None;idx=np.arange(len(graphs))
     for _ in range(ep):
         m.train();mb_rng.shuffle(idx);sel=idx[:mb];o.zero_grad()
         torch.stack([F.cross_entropy(m(graphs[i].to(dev),graphs[i].ndata["x"].to(dev))[mask],labels[i].to(dev)[mask]) for i in sel]).mean().backward();o.step();m.eval()
@@ -158,9 +159,15 @@ def run(dev,seeds=5,ep=100):
                 fs,sfa,sdel,la,lb=sup_detect(fixed,A,B,(yA,yB),dev,mom)
                 sF.append(fs if fs is not None else -1);sFA.append(sfa);sLA.append(la);sLB.append(lb)
                 if sdel is not None: sDelay.append(sdel)
-                st=train(A,yAl,trm,A,yAl,vam,K,dev,ep,mb_rng=mb_rng);Sc.append(evalacc(st,B,yBl,tem,dev))  # stale must validate on A only, never touch B
-                cu=train(A+B,yAl+yBl,trm,B,yBl,vam,K,dev,ep,mb_rng=mb_rng);Cu.append(evalacc(cu,B,yBl,tem,dev))
-                fo=train(B,yBl,trm,B,yBl,vam,K,dev,ep,mb_rng=mb_rng);Fo.append(evalacc(fo,B,yBl,tem,dev))
+                # Fair policy comparison: stale/cumulative/forget all start from the same
+                # per-seed initial weights, and each draws its minibatch sequence from a
+                # freshly re-seeded (hence identical) generator rather than one shared,
+                # sequentially-advancing generator.
+                base_state={k:v.clone() for k,v in GCN(K).to(dev).state_dict().items()}
+                def mbr(_s=s,_K=K): return np.random.default_rng(9000+_K*10+_s)
+                st=train(A,yAl,trm,A,yAl,vam,K,dev,ep,mb_rng=mbr(),init=base_state);Sc.append(evalacc(st,B,yBl,tem,dev))  # stale must validate on A only, never touch B
+                cu=train(A+B,yAl+yBl,trm,B,yBl,vam,K,dev,ep,mb_rng=mbr(),init=base_state);Cu.append(evalacc(cu,B,yBl,tem,dev))
+                fo=train(B,yBl,trm,B,yBl,vam,K,dev,ep,mb_rng=mbr(),init=base_state);Fo.append(evalacc(fo,B,yBl,tem,dev))
             # store per-seed raw results (not just the mean) alongside std.
             R[f"{K}-{ct}"]={"unsup_mmd":float(np.mean(uM)),"unsup_mmd_std":float(np.std(uM)),
                             "unsup_fire":float(np.median(uF)),

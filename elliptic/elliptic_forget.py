@@ -15,8 +15,9 @@ class GCN(nn.Module):
         s.c2=GraphConv(h,c,allow_zero_in_degree=True); s.dp=nn.Dropout(d)
     def forward(s,g,x): return s.c2(g,s.dp(F.relu(s.c1(g,x))))
 
-def train(specs,val,in_dim,a,dev,wt):
+def train(specs,val,in_dim,a,dev,wt,init=None):
     m=GCN(in_dim,a.hidden,2,a.dropout).to(dev)
+    if init is not None: m.load_state_dict(init)
     opt=torch.optim.Adam(m.parameters(),lr=a.lr,weight_decay=a.wd); best=-1; bs=None
     for _ in range(a.epochs):
         m.train(); opt.zero_grad()
@@ -87,9 +88,12 @@ def main():
         spec=lambda idxs,k:[(prepped[i][0],prepped[i][1],prepped[i][2],M[i][k]) for i in idxs]
         Atr,Ava=spec(Aidx,0),spec(Aidx,1)
         Btr,Bva,Bte=spec(Bidx,0),spec(Bidx,1),spec(Bidx,2)
+        # Fair comparison: stale/cumulative/forget all start from the same per-seed
+        # initial weights, so policy differences are not confounded with initialization.
+        base_state={k:v.clone() for k,v in GCN(in_dim,a.hidden,2,a.dropout).to(dev).state_dict().items()}
         arms={"stale":(Atr,Ava),"cumulative":(Atr+Btr,Ava+Bva),"forget":(Btr,Bva)}
         for name,(tr,va) in arms.items():
-            m=train(tr,va,in_dim,a,dev,wt)
+            m=train(tr,va,in_dim,a,dev,wt,init=base_state)
             R[name]["accB"].append(acc(m,Bte)); R[name]["f1B"].append(illicit_f1(m,Bte))
     print(f"=== Elliptic  A=ts{a.A}  B=ts{a.B}  (seeds={a.seeds}, illicit_w={a.illicit_w}) ===")
     print(f"{'arm':<12}{'acc_B':>10}{'illicit-F1_B':>16}")

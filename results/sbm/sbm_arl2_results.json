@@ -1,0 +1,146 @@
+{
+  "K=2 UNSUP order-kept": {
+    "name": "K=2 UNSUP order-kept",
+    "h_star": 5.300000000000002,
+    "arl0_selection_batch": 99.1,
+    "arl0_independent_eval": 93.66666666666667,
+    "arl0_ci95": [
+      70.61199068237357,
+      116.72134265095977
+    ],
+    "censored_of_MC": [
+      0,
+      30
+    ],
+    "delay_mean": 4.517241379310345,
+    "det_rate": 0.9666666666666667
+  },
+  "K=2 UNSUP reorder": {
+    "name": "K=2 UNSUP reorder",
+    "h_star": 5.300000000000002,
+    "arl0_selection_batch": 99.1,
+    "arl0_independent_eval": 93.66666666666667,
+    "arl0_ci95": [
+      70.61199068237357,
+      116.72134265095977
+    ],
+    "censored_of_MC": [
+      0,
+      30
+    ],
+    "delay_mean": 4.357142857142857,
+    "det_rate": 0.9333333333333333
+  },
+  "K=2 SUP concept": {
+    "name": "K=2 SUP concept",
+    "h_star": 3.100000000000001,
+    "arl0_selection_batch": 97.76666666666667,
+    "arl0_independent_eval": 72.83333333333333,
+    "arl0_ci95": [
+      45.34358768423988,
+      100.32307898242678
+    ],
+    "censored_of_MC": [
+      0,
+      30
+    ],
+    "delay_mean": 1.5666666666666667,
+    "det_rate": 1.0
+  },
+  "K=3 UNSUP order-kept": {
+    "name": "K=3 UNSUP order-kept",
+    "h_star": 6.500000000000003,
+    "arl0_selection_batch": 102.66666666666667,
+    "arl0_independent_eval": 75.03333333333333,
+    "arl0_ci95": [
+      53.94787003258019,
+      96.11879663408646
+    ],
+    "censored_of_MC": [
+      0,
+      30
+    ],
+    "delay_mean": 4.633333333333334,
+    "det_rate": 1.0
+  },
+  "K=3 UNSUP reorder": {
+    "name": "K=3 UNSUP reorder",
+    "h_star": 6.500000000000003,
+    "arl0_selection_batch": 102.66666666666667,
+    "arl0_independent_eval": 75.03333333333333,
+    "arl0_ci95": [
+      53.94787003258019,
+      96.11879663408646
+    ],
+    "censored_of_MC": [
+      0,
+      30
+    ],
+    "delay_mean": 4.551724137931035,
+    "det_rate": 0.9666666666666667
+  },
+  "K=3 SUP concept": {
+    "name": "K=3 SUP concept",
+    "h_star": 2.400000000000001,
+    "arl0_selection_batch": 94.46666666666667,
+    "arl0_independent_eval": 80.26666666666667,
+    "arl0_ci95": [
+      58.84930117387433,
+      101.68403215945901
+    ],
+    "censored_of_MC": [
+      0,
+      30
+    ],
+    "delay_mean": 0.8,
+    "det_rate": 1.0
+  },
+  "K=5 UNSUP order-kept": {
+    "name": "K=5 UNSUP order-kept",
+    "h_star": 3.000000000000001,
+    "arl0_selection_batch": 97.16666666666667,
+    "arl0_independent_eval": 99.93333333333334,
+    "arl0_ci95": [
+      69.19319346907648,
+      130.6734731975902
+    ],
+    "censored_of_MC": [
+      2,
+      30
+    ],
+    "delay_mean": 2.892857142857143,
+    "det_rate": 0.9333333333333333
+  },
+  "K=5 UNSUP reorder": {
+    "name": "K=5 UNSUP reorder",
+    "h_star": 3.000000000000001,
+    "arl0_selection_batch": 97.16666666666667,
+    "arl0_independent_eval": 99.93333333333334,
+    "arl0_ci95": [
+      69.19319346907648,
+      130.6734731975902
+    ],
+    "censored_of_MC": [
+      2,
+      30
+    ],
+    "delay_mean": 2.892857142857143,
+    "det_rate": 0.9333333333333333
+  },
+  "K=5 SUP concept": {
+    "name": "K=5 SUP concept",
+    "h_star": 2.000000000000001,
+    "arl0_selection_batch": 104.26666666666667,
+    "arl0_independent_eval": 59.5,
+    "arl0_ci95": [
+      40.2845014636622,
+      78.7154985363378
+    ],
+    "censored_of_MC": [
+      0,
+      30
+    ],
+    "delay_mean": 0.7857142857142857,
+    "det_rate": 0.9333333333333333
+  }
+}

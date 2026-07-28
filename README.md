@@ -1,0 +1,144 @@
+# Time to Forget: Continual Learning on Dynamic Graphs via Regime Change Detection
+
+Code for the anonymous submission *"Time to Forget: Continual Learning on Dynamic Graphs
+via Regime Change Detection."*
+
+The method monitors a stream of graph representations with a **conformal p-value +
+CUSUM** chart. When the chart alarms, the monitoring reference is renewed and the
+continual learner applies a memory policy (no-forget / soft-forget / hard-forget). This
+repository contains the code for all reported experiments, plus the saved result files so
+every number and figure in the paper can be checked without rerunning anything.
+
+---
+
+## 1. Repository layout
+
+```
+sbm/          synthetic stochastic-block-model experiments (no external data needed)
+elliptic/     Elliptic (Bitcoin) real-data experiments
+dblp/         DBLP negative-control detection
+figures/      plotting scripts; all read from results/, none hardcode numbers
+results/      saved JSON / NPZ outputs of every script below
+```
+
+## 2. Requirements
+
+```
+python >= 3.9
+torch, dgl            # GCN via dgl.nn.GraphConv
+numpy, scipy          # scipy.spatial.distance.cdist for the MMD kernel
+matplotlib            # figures only
+```
+
+The SBM experiments run on CPU in a few minutes each. The Elliptic experiments were run
+on a single GPU.
+
+## 3. Data
+
+**SBM** needs no external data: graphs are generated on the fly from a fixed seed.
+
+**Elliptic** expects `data/elliptic/elliptic_graphs.pkl`, a pickled list of 49 DGL graphs
+with `ndata["x"]` (165 features) and `ndata["y"]` (1 = illicit, 0 = licit, -1 = unknown),
+built from the public
+[Elliptic Data Set](https://www.kaggle.com/datasets/ellipticco/elliptic-data-set).
+Override the location with `--data` (or `ELLIPTIC_DIR` for `elliptic_policy.py`).
+
+**DBLP** expects a directory of per-year snapshots (`sub_graph_<i>_by_edges` plus a
+`statistics` file giving the number of snapshots), derived from the public
+[ArnetMiner/DBLP](https://www.aminer.org/citation) citation data. Pass it with `--path`.
+
+Both real datasets are redistributed by their original providers, not here.
+
+## 4. Reproducing the experiments
+
+### 4.1 Synthetic SBM
+
+```bash
+python sbm/sbm_full.py            --out results/sbm/sbm_full_results.json
+python sbm/sbm_arl2.py            # ARL0-calibrated detection, windowed score
+python sbm/sbm_pointwise_arl.py   # ARL0-calibrated detection, literal pointwise score (Eq. 2)
+python sbm/sbm_policy.py          # no-/soft-/hard-forget + warm start
+python sbm/sbm_ratio3.py          # equal-training-size control sweep
+```
+
+`sbm_full.py` produces, for K in {2,3,5} and four change types, the unsupervised MMD
+score, the frozen-model supervised loss, alarm times, and downstream stale / cumulative /
+forget accuracy over 5 seeds.
+
+### 4.2 Elliptic
+
+```bash
+python elliptic/elliptic_forget.py --A 1-42 --B 43-49 --out results/elliptic/elliptic_forget_sharp.json
+python elliptic/elliptic_forget.py --A 1-34 --B 35-49 --out results/elliptic/elliptic_forget_broad.json
+python elliptic/elliptic_ratio.py  --out results/elliptic/elliptic_ratio.json
+python elliptic/elliptic_policy.py
+# supervised detector, short and event-aligned windows, 5 seeds each
+for s in 0 1 2 3 4; do
+  python elliptic/elliptic_sup_detect.py --train_end 20 --cal_end 30 --seed $s
+  python elliptic/elliptic_sup_detect.py --train_end 30 --cal_end 42 --seed $s
+done
+# unsupervised feature-MMD detector
+python dblp/conformal_stream.py --kind elliptic --path data/elliptic --incontrol 30 --out results/elliptic
+python dblp/conformal_stream.py --kind elliptic --path data/elliptic --incontrol 42 --out results/elliptic
+```
+
+### 4.3 DBLP (negative control)
+
+```bash
+python dblp/conformal_stream.py --kind dblp --path <dblp-snapshot-dir> --incontrol 6 --out results/dblp
+```
+
+### 4.4 Figures
+
+```bash
+python figures/plot_sbm_perclass.py       # per-class SBM detection + downstream panels
+python figures/plot_concept_merged.py     # concept change merged across K
+python figures/plot_experiments.py        # post-alarm memory policy
+python figures/plot_ratio.py              # equal-training-size sweeps (SBM + Elliptic)
+python figures/plot_elliptic.py           # Elliptic downstream forgetting
+python figures/plot_elliptic_detect.py    # Elliptic/DBLP evidence trajectories
+python figures/plot_elliptic_detect2.py   # short vs event-aligned reference window
+python figures/plot_elliptic_multiseed.py # 5-seed overlay of the supervised detector
+```
+
+Plotting scripts read from `results/` and derive every plotted value and annotation from
+those files, so a rerun of an upstream script is reflected in the figures automatically.
+
+## 5. Method details worth knowing when reading the code
+
+- **Conformal p-value** (Eq. 1) and the **CUSUM recursion** `C_t = max(0, C_{t-1} +
+  log f(p_t))` with log-surprisal betting `f(p) = -log p` are implemented in
+  `cusum_fire` / `run_cusum` / `monitor` across the scripts.
+- **Two nonconformity scores** are used: a label-free kernel-MMD score on graph
+  representations, and a supervised score (frozen-model cross-entropy on SBM,
+  `1 - illicit-recall` on Elliptic) for changes that alter the labeling rule rather than
+  the structure.
+- **Pointwise vs windowed.** `sbm_pointwise_arl.py` implements the literal Eq. 2
+  single-snapshot score; `sbm_arl2.py` uses a 5-snapshot sliding window, which is
+  lower-variance but makes consecutive scores dependent. Both are reported.
+- **Data-split discipline.** Training, reference, calibration and monitoring blocks are
+  kept disjoint; standardization statistics are computed only from pre-monitoring data;
+  the CUSUM is reset at the true monitoring start rather than accumulated from step 1.
+  On SBM the supervised monitor scores on a node mask disjoint from both the classifier's
+  train/validation masks and the downstream test mask.
+- **Thresholds.** SBM thresholds are Monte-Carlo calibrated to a target in-control
+  ARL0 ≈ 100, with threshold selection and ARL0 evaluation on independent simulation
+  batches. On real data there is no known in-control generating model, so no threshold is
+  claimed to achieve a verified ARL0; the real-data figures show raw evidence
+  trajectories and threshold-dependent alarm times are reported as a sensitivity analysis.
+
+## 6. Scope and limitations
+
+- The SBM unsupervised monitor uses an 8-dimensional degree-distribution graph summary;
+  the Elliptic/DBLP unsupervised monitor uses an MMD on the raw node-feature distribution.
+  Neither is the trained-GNN mean-pooled embedding, so these experiments should be read as
+  validating the conformal + CUSUM monitoring framework rather than any particular
+  learned representation.
+- Topology-augmented (zigzag-persistence) representations are **not** exercised by any
+  script here.
+- All results use 5 seeds; means and per-seed values are stored in `results/`, but no
+  paired-difference confidence intervals are computed.
+- The Elliptic supervised detector with the short (20-step) training window is
+  seed-sensitive; the 5-seed spread is saved in
+  `results/elliptic/elliptic_sup_detect_t20c30_seed*.npz` and shown by
+  `figures/plot_elliptic_multiseed.py`.

@@ -117,11 +117,15 @@ def main():
                 return 2*prec*rec/(prec+rec) if prec+rec else 0.
         Atr=build(Aidx,0,1.0);Ava=build(Aidx,1,1.0)
         Btr=build(Bidx,0,1.0);Bva=build(Bidx,1,1.0);Bte=build(Bidx,2,1.0)
-        stale=train_pg([Atr],[Ava]);R["stale"].append(acc_pg(stale,[Bte]))
-        R["no-forget"].append(acc_pg(train_pg([Atr,Btr],[Bva]),[Bte]))
-        R["soft-0.3"].append(acc_pg(train_pg([build(Aidx,0,0.3),Btr],[Bva]),[Bte]))
-        R["soft-0.5"].append(acc_pg(train_pg([build(Aidx,0,0.5),Btr],[Bva]),[Bte]))
-        R["hard-scratch"].append(acc_pg(train_pg([Btr],[Bva]),[Bte]))
+        # stale/no-forget/soft-0.3/soft-0.5/hard-scratch all start from the same
+        # per-seed initial weights; hard-warm still initializes from the trained
+        # stale model, unchanged.
+        base_state={k:v.clone() for k,v in GCN(in_dim,128,2).to(dev).state_dict().items()}
+        stale=train_pg([Atr],[Ava],init=base_state);R["stale"].append(acc_pg(stale,[Bte]))
+        R["no-forget"].append(acc_pg(train_pg([Atr,Btr],[Bva],init=base_state),[Bte]))
+        R["soft-0.3"].append(acc_pg(train_pg([build(Aidx,0,0.3),Btr],[Bva],init=base_state),[Bte]))
+        R["soft-0.5"].append(acc_pg(train_pg([build(Aidx,0,0.5),Btr],[Bva],init=base_state),[Bte]))
+        R["hard-scratch"].append(acc_pg(train_pg([Btr],[Bva],init=base_state),[Bte]))
         R["hard-warm"].append(acc_pg(train_pg([Btr],[Bva],init={k:v.clone() for k,v in stale.state_dict().items()}),[Bte]))
         print(f"seed {s} done",flush=True)
     print("=== Elliptic memory-policy + warm-start (illicit-F1 on B=ts43-49 test) ===")

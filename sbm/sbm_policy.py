@@ -1,13 +1,3 @@
-"""Post-alarm memory policies and warm start on SBM streams.
-
-Arms on regime B (100 nodes, 100 graphs per regime):
-  stale         train on A only, no adaptation
-  no-forget     train on A and B with equal weight
-  soft-forget   train on A downweighted by rho in {0.3, 0.5}, B at unit weight
-  hard-scratch  train on B only from a random initialization
-  hard-warm     train on B only, initialized from the stale model
-
-Reports regime-B test accuracy for the concept and reorder changes."""
 import json, numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
 N=100; NG=100; SEEDS=5; EP=100
@@ -36,7 +26,7 @@ class GCN(nn.Module):
     def forward(s,g,x):return s.c2(g,s.dp(F.relu(s.c1(g,x))))
 def train(specs,vg,vl,vm,K,dev,ep=EP,mb=10,init=None,mb_rng=None):
     """specs = list of (graphs, labels, mask, weight)."""
-    if mb_rng is None: mb_rng=np.random.default_rng()  # local generator
+    if mb_rng is None: mb_rng=np.random.default_rng() 
     m=GCN(K).to(dev)
     if init is not None: m.load_state_dict(init)         # warm-start
     o=torch.optim.Adam(m.parameters(),lr=1e-2,weight_decay=5e-4);best=-1;bs=None
@@ -72,18 +62,25 @@ for K in (2,3,5):
         for s in range(SEEDS):
             torch.manual_seed(s)
             rng=np.random.default_rng(600+K*10+s)
-            mb_rng=np.random.default_rng(9600+K*10+s)  # local generator for minibatch sampling
             cp0=CBASE[K] if ct=="concept" else p0
             A=gen(base,cp0,q,K,NG,rng);yA=torch.tensor(base)
             if ct=="concept": B=gen(base,cp0,q,K,NG,rng);yB=torch.tensor(degree_labels_avg(B,K))
             else: B=gen(base,REORDER[K],q,K,NG,rng);yB=torch.tensor(base)
-            stale=train([(A,yA,trm,1.0)],A,yA,vam,K,dev,mb_rng=mb_rng)
+            # Fair comparison: every from-scratch arm starts from the SAME initial weights
+            # (one fresh GCN per seed, cloned into each arm) and, since numpy's default_rng
+            # is deterministic given a seed, every arm also draws the identical minibatch
+            # sequence (a fresh generator re-seeded the same way per arm, not one generator
+            # object shared/advanced across arms) -- so policy differences are not confounded
+            # with initialization or minibatch-order randomness.
+            base_state={k:v.clone() for k,v in GCN(K).to(dev).state_dict().items()}
+            def mbr(): return np.random.default_rng(9600+K*10+s)
+            stale=train([(A,yA,trm,1.0)],A,yA,vam,K,dev,init=base_state,mb_rng=mbr())
             res["stale"].append(acc(stale,B,yB,tem,dev))
-            res["no-forget"].append(acc(train([(A,yA,trm,1.0),(B,yB,trm,1.0)],B,yB,vam,K,dev,mb_rng=mb_rng),B,yB,tem,dev))
-            res["soft-0.3"].append(acc(train([(A,yA,trm,0.3),(B,yB,trm,1.0)],B,yB,vam,K,dev,mb_rng=mb_rng),B,yB,tem,dev))
-            res["soft-0.5"].append(acc(train([(A,yA,trm,0.5),(B,yB,trm,1.0)],B,yB,vam,K,dev,mb_rng=mb_rng),B,yB,tem,dev))
-            res["hard-scratch"].append(acc(train([(B,yB,trm,1.0)],B,yB,vam,K,dev,mb_rng=mb_rng),B,yB,tem,dev))
-            res["hard-warm"].append(acc(train([(B,yB,trm,1.0)],B,yB,vam,K,dev,init={k:v.clone() for k,v in stale.state_dict().items()},mb_rng=mb_rng),B,yB,tem,dev))
+            res["no-forget"].append(acc(train([(A,yA,trm,1.0),(B,yB,trm,1.0)],B,yB,vam,K,dev,init=base_state,mb_rng=mbr()),B,yB,tem,dev))
+            res["soft-0.3"].append(acc(train([(A,yA,trm,0.3),(B,yB,trm,1.0)],B,yB,vam,K,dev,init=base_state,mb_rng=mbr()),B,yB,tem,dev))
+            res["soft-0.5"].append(acc(train([(A,yA,trm,0.5),(B,yB,trm,1.0)],B,yB,vam,K,dev,init=base_state,mb_rng=mbr()),B,yB,tem,dev))
+            res["hard-scratch"].append(acc(train([(B,yB,trm,1.0)],B,yB,vam,K,dev,init=base_state,mb_rng=mbr()),B,yB,tem,dev))
+            res["hard-warm"].append(acc(train([(B,yB,trm,1.0)],B,yB,vam,K,dev,init={k:v.clone() for k,v in stale.state_dict().items()},mb_rng=mbr()),B,yB,tem,dev))
         # keep per-seed raw results + std, not just the mean.
         R[f"{K}-{ct}"]={a:float(np.mean(res[a])) for a in ARMS}
         R[f"{K}-{ct}"].update({f"{a}_std":float(np.std(res[a])) for a in ARMS})

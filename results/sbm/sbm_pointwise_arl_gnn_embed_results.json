@@ -1,15 +1,15 @@
 {
   "K=2 GNNEMBED-POINTWISE order-kept": {
     "name": "K=2 GNNEMBED-POINTWISE order-kept",
-    "h_star": 3.300000000000001,
-    "arl0_selection_batch": 92.5,
-    "arl0_independent_eval": 115.26666666666667,
+    "h_star": 3.4000000000000012,
+    "arl0_selection_batch": 99.86666666666666,
+    "arl0_independent_eval": 122.23333333333333,
     "arl0_ci95": [
-      80.53882771885442,
-      149.9945056144789
+      87.22384826005218,
+      157.2428184066145
     ],
     "censored_of_MC": [
-      1,
+      2,
       30
     ],
     "delay_mean": 1.5666666666666667,
@@ -50,28 +50,28 @@
   },
   "K=2 GNNEMBED-POINTWISE reorder": {
     "name": "K=2 GNNEMBED-POINTWISE reorder",
-    "h_star": 3.300000000000001,
-    "arl0_selection_batch": 92.5,
-    "arl0_independent_eval": 115.26666666666667,
+    "h_star": 3.4000000000000012,
+    "arl0_selection_batch": 99.86666666666666,
+    "arl0_independent_eval": 122.23333333333333,
     "arl0_ci95": [
-      80.53882771885442,
-      149.9945056144789
+      87.22384826005218,
+      157.2428184066145
     ],
     "censored_of_MC": [
-      1,
+      2,
       30
     ],
-    "delay_mean": 1.5517241379310345,
-    "delay_std": 0.673959320196278,
+    "delay_mean": 1.6206896551724137,
+    "delay_std": 0.6650793628271005,
     "delays_per_run": [
       0,
       2,
       2,
       1,
       0,
-      1,
       2,
-      1,
+      2,
+      2,
       1,
       2,
       2,
@@ -99,11 +99,11 @@
   "K=3 GNNEMBED-POINTWISE order-kept": {
     "name": "K=3 GNNEMBED-POINTWISE order-kept",
     "h_star": 2.200000000000001,
-    "arl0_selection_batch": 86.93333333333334,
-    "arl0_independent_eval": 63.833333333333336,
+    "arl0_selection_batch": 87.03333333333333,
+    "arl0_independent_eval": 65.03333333333333,
     "arl0_ci95": [
-      40.45931941790755,
-      87.20734724875912
+      41.55720505263398,
+      88.50946161403269
     ],
     "censored_of_MC": [
       1,
@@ -145,18 +145,18 @@
   "K=3 GNNEMBED-POINTWISE reorder": {
     "name": "K=3 GNNEMBED-POINTWISE reorder",
     "h_star": 2.200000000000001,
-    "arl0_selection_batch": 86.93333333333334,
-    "arl0_independent_eval": 63.833333333333336,
+    "arl0_selection_batch": 87.03333333333333,
+    "arl0_independent_eval": 65.03333333333333,
     "arl0_ci95": [
-      40.45931941790755,
-      87.20734724875912
+      41.55720505263398,
+      88.50946161403269
     ],
     "censored_of_MC": [
       1,
       30
     ],
-    "delay_mean": 0.9615384615384616,
-    "delay_std": 0.6493055006205435,
+    "delay_mean": 1.0,
+    "delay_std": 0.6793662204867574,
     "delays_per_run": [
       2,
       2,
@@ -181,7 +181,7 @@
       1,
       0,
       2,
-      1,
+      2,
       1,
       2
     ],
@@ -190,14 +190,14 @@
   "K=5 GNNEMBED-POINTWISE order-kept": {
     "name": "K=5 GNNEMBED-POINTWISE order-kept",
     "h_star": 2.000000000000001,
-    "arl0_selection_batch": 93.76666666666667,
-    "arl0_independent_eval": 92.96666666666667,
+    "arl0_selection_batch": 96.9,
+    "arl0_independent_eval": 96.63333333333334,
     "arl0_ci95": [
-      67.50049372322687,
-      118.43283961010647
+      68.6222454028039,
+      124.64442126386278
     ],
     "censored_of_MC": [
-      1,
+      2,
       30
     ],
     "delay_mean": 0.96,
@@ -234,21 +234,21 @@
   "K=5 GNNEMBED-POINTWISE reorder": {
     "name": "K=5 GNNEMBED-POINTWISE reorder",
     "h_star": 2.000000000000001,
-    "arl0_selection_batch": 93.76666666666667,
-    "arl0_independent_eval": 92.96666666666667,
+    "arl0_selection_batch": 96.9,
+    "arl0_independent_eval": 96.63333333333334,
     "arl0_ci95": [
-      67.50049372322687,
-      118.43283961010647
+      68.6222454028039,
+      124.64442126386278
     ],
     "censored_of_MC": [
-      1,
+      2,
       30
     ],
     "delay_mean": 1.5357142857142858,
-    "delay_std": 0.9442360047430204,
+    "delay_std": 1.0170736332784387,
     "delays_per_run": [
       1,
-      2,
+      3,
       1,
       1,
       1,
@@ -261,7 +261,7 @@
       1,
       5,
       3,
-      1,
+      0,
       0,
       1,
       2,

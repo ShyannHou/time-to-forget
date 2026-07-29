@@ -45,16 +45,21 @@ def gnn_embed(model, g):
 
 def fit_pointwise_ref(refX):
     mu = refX.mean(0); sd = refX.std(0) + 1e-9; Rz = (refX - mu) / sd
-    d = cdist(Rz, Rz); med = np.median(d) + 1e-9; gamma = 1 / (2 * med ** 2)
-    Kk = np.exp(-gamma * d ** 2); m = len(Rz)
-    krr_term = float((Kk.sum() - np.trace(Kk)) / (m * (m - 1)))
-    return {"mu": mu, "sd": sd, "gamma": gamma, "krr_term": krr_term, "Rz": Rz, "m": m}
+    m = len(Rz); iu = np.triu_indices(m, 1)
+    ref_pair_sq = cdist(Rz, Rz)[iu] ** 2
+    return {"mu": mu, "sd": sd, "Rz": Rz, "m": m, "ref_pair_sq": ref_pair_sq}
 
 
 def pointwise_score(z, ref_stats):
     zz = (z - ref_stats["mu"]) / ref_stats["sd"]
-    cross = np.exp(-ref_stats["gamma"] * np.sum((ref_stats["Rz"] - zz) ** 2, axis=1))
-    return ref_stats["krr_term"] + 1.0 - (2.0 / ref_stats["m"]) * cross.sum()
+    Rz = ref_stats["Rz"]; m = ref_stats["m"]; ref_pair_sq = ref_stats["ref_pair_sq"]
+    d_to_z = np.sqrt(np.sum((Rz - zz) ** 2, axis=1))
+    # bandwidth = median heuristic on R_j U {z_t}: recomputed every t, matching Eq. 2
+    all_d = np.concatenate([np.sqrt(ref_pair_sq), d_to_z])
+    med = np.median(all_d) + 1e-9; gamma = 1 / (2 * med ** 2)
+    cross = np.exp(-gamma * d_to_z ** 2)
+    krr_term = 2.0 * np.exp(-gamma * ref_pair_sq).sum() / (m * (m - 1))
+    return krr_term + 1.0 - (2.0 / m) * cross.sum()
 
 
 K = K_TO_PLOT

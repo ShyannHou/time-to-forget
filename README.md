@@ -171,6 +171,23 @@ those files, so a rerun of an upstream script is reflected in the figures automa
   before the true event and always fires within a few steps after it, but the final
   CUSUM magnitude varies roughly 2x seed to seed.
 - The pointwise ARL0 calibration does not hit the target of 100 exactly at every K; the
-  achieved ARL0 (independent evaluation batch) ranges from about 64 to 115 across
+  achieved ARL0 (independent evaluation batch) ranges from about 65 to 122 across
   K in {2,3,5} for the GCN-embedding detector. Both the target and achieved values are
   saved per-K in `results/sbm/sbm_pointwise_arl_gnn_embed_results.json`.
+- The "concept" change type's labels (`sbm/sbm_full.py`, `degree_labels_avg(B, K)`) are
+  the average degree rank of each node computed over the SAME 100 regime-B graphs that
+  are later split into training/monitoring/test data. This is a retrospective /
+  transductive construction: in a genuinely online setting the very first regime-B graph
+  would not yet have access to later regime-B graphs when its label is assigned. The
+  reported Table 2 concept-change numbers use this construction.
+- Three additional scripts are included as reference implementations but have **not**
+  been executed end-to-end (no run/verification pass), and do not affect any number
+  reported above: `sbm/sbm_online_pipeline.py` (alarm-triggered detect-renew-adapt
+  pipeline with CUSUM reset and reference/calibration renewal after each alarm, vs. the
+  known-A/B-boundary policy comparisons used everywhere else), `sbm/sbm_pointwise_arl_gnn_embed_highmc.py`
+  (raises the ARL calibration Monte Carlo from 30 to 200/500 selection/evaluation runs
+  with explicit censoring-rate and restricted-mean-run-length reporting), and
+  `sbm/sbm_full_pilot_concept.py` (defines concept-change labels from an independent
+  pilot graph set instead of the same B graphs used for training/monitoring/test,
+  addressing the retrospective-labeling caveat above -- see the docstring of each file
+  for exact scope and status).

@@ -104,10 +104,15 @@ def main():
     ref = torch.cat([samp(feats[t]) for t in ref_steps], 0)
     if ref.shape[0] > a.sub * 2:
         ref = ref[rng.choice(ref.shape[0], a.sub * 2, replace=False)]
-    with torch.no_grad():
-        d = torch.pdist(ref); med = float(d.median()); gamma = 1.0 / (2 * med ** 2 + 1e-9)
 
-    scores = np.array([rbf_mmd2(samp(feats[t]), ref, gamma) for t in range(T)])
+    # bandwidth = median heuristic on R_j union the current sample, recomputed every t
+    def score_at(t):
+        Y = samp(feats[t])
+        with torch.no_grad():
+            d = torch.pdist(torch.cat([ref, Y], 0)); med = float(d.median()); gamma = 1.0 / (2 * med ** 2 + 1e-9)
+        return rbf_mmd2(Y, ref, gamma)
+
+    scores = np.array([score_at(t) for t in range(T)])
     cal = scores[cal_steps]
     pv = np.array([(1 + np.sum(cal >= scores[t])) / (len(cal) + 1) for t in range(T)])
     pv_cal_loo = np.array([(1 + np.sum(np.delete(cal, i) >= cal[i])) / len(cal) for i in range(len(cal))])

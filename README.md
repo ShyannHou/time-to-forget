@@ -149,6 +149,19 @@ those files, so a rerun of an upstream script is reflected in the figures automa
   batches. On real data there is no known in-control generating model, so no threshold is
   claimed to achieve a verified ARL0; the real-data figures show raw evidence
   trajectories and threshold-dependent alarm times are reported as a sensitivity analysis.
+- **Memory-policy timing convention (single-change SBM/Elliptic tables and figures).**
+  Policies are conceptually applied after the conformal alarm (Algorithm 3), but for
+  reporting, Table 2 and the Elliptic/DBLP downstream comparisons align the stale /
+  cumulative / hard-forget regime split with the designed (known) pre-/post-change
+  boundary rather than the exact alarm index. This is a reporting simplification, not a
+  different mechanism: in every single-change experiment reported here the measured
+  detection delay is small relative to the regime length (0.8-1.6 snapshots out of 100
+  for SBM; see Table 2's own delay column), so the designed boundary and an
+  alarm-triggered boundary would place at most 1-2 of 100 post-change graphs
+  differently, which does not materially affect the reported downstream accuracies.
+  This convention is used only for the single-change, single-renewal experiments that
+  produce the paper's reported numbers; see the next section for the separate,
+  harder, multi-change alarm-triggered setting.
 
 ## 6. Scope and limitations
 
@@ -197,6 +210,13 @@ those files, so a rerun of an upstream script is reflected in the figures automa
   because cumulative's accuracy rises once B's labels no longer implicitly encode
   information from the exact B graphs used downstream. This result is NOT what Table 2
   reports; Table 2 uses the retrospective construction described above.
+- **Scope note.** All numbers reported in the paper (Table 2, Figures 2-6, Elliptic/DBLP)
+  come from the single-change, single-renewal experiments described in Section 5 above,
+  where the reporting convention aligns the policy split with the designed boundary
+  given a small measured detection delay. `sbm/sbm_online_pipeline.py`, described next,
+  is a strictly harder and different setting -- multiple sequential changes with
+  automatic, repeated alarm-triggered renewal and no designed-boundary fallback -- that
+  the paper does not claim to have solved; it was added as an exploratory extension.
 - `sbm/sbm_online_pipeline.py` implements the alarm-triggered detect-renew-adapt
   pipeline with CUSUM reset and reference/calibration renewal after each alarm (vs. the
   known-A/B-boundary policy comparisons used everywhere else), executed for 5 seeds at

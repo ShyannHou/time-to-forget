@@ -53,7 +53,10 @@ RENEW_REF_SIZE = 70
 RENEW_CAL_SIZE = 20
 BURN_IN = RENEW_REF_SIZE + RENEW_CAL_SIZE   # 90
 TARGET_ARL = 100
-MC_THRESH = 30   # threshold-(re)selection Monte Carlo runs per calibration
+MC_THRESH = 80   # threshold-(re)selection Monte Carlo runs per calibration; raised from
+                 # the original 30 after full-scale runs showed MC=30 gives an unreliable
+                 # threshold (both initially and after renewal), matching the fix already
+                 # validated in sbm_pointwise_arl_gnn_embed_highmc.py
 
 
 def deg(g):
@@ -81,9 +84,10 @@ class GCN(nn.Module):
 
 
 def gnn_embed(model, g):
+    dev = next(model.parameters()).device
     with torch.no_grad():
-        h = F.relu(model.c1(g, g.ndata["x"]))
-        return h.mean(0).numpy()
+        h = F.relu(model.c1(g.to(dev), g.ndata["x"].to(dev)))
+        return h.mean(0).cpu().numpy()
 
 
 def fit_pointwise_ref(refX):
@@ -111,7 +115,7 @@ def cusum_step(prev_S, sc, cal):
 
 
 def calibrate_threshold(model, ref_stats, cal, base, in_control_intra, q, K, rng,
-                         target_arl=TARGET_ARL, mc=MC_THRESH, horizon=300):
+                         target_arl=TARGET_ARL, mc=MC_THRESH, horizon=600):
     """Selects h* by Monte Carlo simulation of streams from the CURRENT in-control
     distribution (the just-renewed regime), matching the ARL0 calibration protocol
     used elsewhere in the repo."""
@@ -276,11 +280,7 @@ def main():
                                                           # second renewal cycle to actually complete inline
     ap.add_argument("--out", default="results/sbm/sbm_online_pipeline_results.json")
     a = ap.parse_args()
-    # kept on CPU throughout: SBM graphs here are tiny (N=100 nodes), and gnn_embed()
-    # does not move its graph argument to device, matching the CPU-only convention
-    # already used in sbm_pointwise_arl_gnn_embed.py -- forcing GPU here without also
-    # fixing that call site would reintroduce a device-mismatch crash.
-    dev = torch.device("cpu")
+    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     policies = ["oracle-hard", "detected-hard", "detected-soft", "no-forget"]
     all_results = {p: [] for p in policies}

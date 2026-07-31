@@ -200,17 +200,23 @@ those files, so a rerun of an upstream script is reflected in the figures automa
 - `sbm/sbm_online_pipeline.py` implements the alarm-triggered detect-renew-adapt
   pipeline with CUSUM reset and reference/calibration renewal after each alarm (vs. the
   known-A/B-boundary policy comparisons used everywhere else), executed for 5 seeds at
-  each K (`results/sbm/sbm_online_pipeline_K{2,3,5}_results.json`). The oracle-hard arm
-  (true change time, not detected) is clean at every seed and K (0-3 step delay, no
-  false alarms). The detector-triggered arms are NOT reliable at this pipeline's
-  default MC_THRESH=30 per-renewal threshold calibration: across K in {2,3,5}, about
-  60% of alarms across seeds are false alarms (firing well before the corresponding
-  true change, sometimes during what should be in-control monitoring), the same
-  MC=30 calibration-noise issue documented for the ARL0 table above, now compounded by
-  needing a fresh calibration after every renewal from only 70-90 burn-in graphs. This
-  pipeline should not be read as a validated "detection reliably triggers adaptation"
-  result; it demonstrates the renewal mechanism works mechanically (CUSUM resets,
-  reference/calibration rebuild, a second alarm can fire against the renewed
-  reference) but the false-alarm rate needs the higher-MC calibration above (or more
-  burn-in graphs) plumbed into `calibrate_threshold` before it is a reliable detector,
-  which was not done here given time constraints.
+  each K (`results/sbm/sbm_online_pipeline_K{2,3,5}_results.json`, `MC_THRESH=30`). The
+  oracle-hard arm (true change time, not detected) is clean at every seed and K (0-3
+  step delay, no false alarms). The detector-triggered arms are **not** reliable: across
+  K in {2,3,5}, about 60% of alarms across seeds are false alarms, firing well before
+  the corresponding true change, sometimes during what should be in-control monitoring.
+  This was initially hypothesized to be the same MC=30 threshold-selection noise
+  documented for the ARL0 table above; that hypothesis was tested and **rejected**:
+  rerunning with `MC_THRESH=80` and a 600-step calibration horizon
+  (`results/sbm/sbm_online_pipeline_mc80_K{2,3,5}_results.json`) gives an almost
+  identical false-alarm rate per K (K=2: 0.34 -> 0.34, K=3: 0.54 -> 0.55, K=5: 0.85 ->
+  0.87), so more Monte Carlo threshold-selection runs do not help here. The likely cause
+  is instead that each renewal retrains the model on only 70-90 burn-in graphs, and the
+  resulting embeddings/scores may not have stabilized enough within a single regime to
+  match a fixed reference distribution -- a small-sample post-renewal stability issue,
+  not a threshold-calibration precision issue. This was not tracked down further or
+  fixed given time constraints. This pipeline should not be read as a validated
+  "detection reliably triggers adaptation" result; it demonstrates that the renewal
+  mechanism works mechanically (CUSUM resets, reference/calibration rebuild, a second
+  alarm can fire against the renewed reference) but the detector itself is not yet
+  reliable enough after renewal for the results to be trusted.

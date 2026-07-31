@@ -1,8 +1,3 @@
-"""Evidence-trajectory comparison for the Elliptic and DBLP detectors.
-
-Plots raw CUSUM trajectories without a threshold line, since no in-control
-generating model is available on real data to calibrate one against;
-threshold-dependent alarm times are reported separately as a sensitivity analysis."""
 import os, matplotlib;matplotlib.use("Agg");import matplotlib.pyplot as plt,numpy as np
 bad="#C0392B";good="#2E8B57";blue="#2C6FBB";orange="#E67E22"
 dblp=np.load("results/dblp/conformal_dblp.npz")

@@ -33,7 +33,6 @@ class GCN(nn.Module):
     def __init__(s,K):super().__init__();s.c1=GraphConv(4,64,allow_zero_in_degree=True);s.c2=GraphConv(64,K,allow_zero_in_degree=True);s.dp=nn.Dropout(0.5)
     def forward(s,g,x):return s.c2(g,s.dp(F.relu(s.c1(g,x))))
 def run_cusum(scores,cal,h):
-    """Paper's literal Eq.6: C_t = max(0, C_{t-1} + log f(p_t)), f(p)=-log(p) (log-surprisal)."""
     cal=np.array([max(c,0) for c in cal]);nc=len(cal);S=0.0
     for t,sc in enumerate(scores):
         p=(1+int((cal>=max(sc,0)).sum()))/(nc+1);S=max(0.0,S+np.log(max(-np.log(p),1e-12)))

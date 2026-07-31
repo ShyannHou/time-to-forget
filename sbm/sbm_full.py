@@ -1,16 +1,3 @@
-"""Main SBM experiment matrix: four change types x two detectors x downstream forgetting.
-
-Change types, on 100 nodes and 100 graphs per regime:
-  order-kept   covariate shift, community labels kept, density ranking preserved
-  reorder      covariate shift, community labels kept, density ranking reversed
-  concept      structure held fixed, labels redefined by degree-rank bins
-  degree-regen edges regenerated from the degree bins of regime A
-
-The unsupervised score is a label-free MMD on an 8-dimensional degree-distribution
-summary; the supervised score is the frozen regime-A model's cross-entropy on a
-monitoring node mask. Both are conformalized and accumulated by CUSUM, with the
-change at stream position 10 of a 10 + 10 snapshot stream. Downstream, stale /
-cumulative / forget accuracy is reported on regime-B test nodes."""
 import os, json, argparse
 import numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
@@ -77,21 +64,12 @@ def evalacc(m,graphs,labels,mask,dev):
             g=graphs[i].to(dev);pr=m(g,g.ndata["x"].to(dev))[mask].argmax(1);c+=(pr==labels[i].to(dev)[mask]).sum().item();t+=int(mask.sum())
     return c/max(t,1)
 def cusum_fire(scores_stream, cal, thr=3.0):
-    """Paper's literal Eq.6 conformal CUSUM: C_t = max(0, C_{t-1} + log f(p_t)) with the
-    log-surprisal betting function f(p)=-log(p), i.e. increment = log(-log(p_t)).
-    thr=3.0 is calibrated (via a separate Monte-Carlo check on Uniform(0,1) in-control
-    p-values) to give ARL0~100, matching the scale of the ARL0-calibrated tables below."""
     cal=np.array([max(c,0) for c in cal]);nc=len(cal);S=0.0;fired=None
     for t,sc in enumerate(scores_stream):
         p=(1+int((cal>=max(sc,0)).sum()))/(nc+1);S=max(0.0,S+np.log(max(-np.log(p),1e-12)))
         if S>thr and fired is None:fired=t
     return fired,float(S)
 def unsup_detect(A,B):
-    """CHANGE_TIME=10 (0-based): st[0:10]=in-control A, st[10:20]=post-change B.
-    cusum_fire is called on scores[w-1:] (the window warm-up is sliced off), so its
-    returned index is relative to that SLICE, not the original stream -- must add back w-1 to
-    get the true stream time. We also explicitly flag alarms that land before CHANGE_TIME as
-    false alarms rather than reporting them as if they were (early) true detections."""
     CHANGE_TIME=10
     ref=np.array([gembed(g) for g in A[:70]]);w=5
     cp=[gembed(g) for g in A[70:90]];cal=[mmd2(np.array(cp[i:i+w]),ref) for i in range(len(cp)-w+1)]
@@ -105,10 +83,6 @@ def unsup_detect(A,B):
     post=[s for i,s in enumerate(scores) if i>=CHANGE_TIME]
     return float(np.mean(post)),fired,false_alarm,delay
 def sup_detect(model,A,B,ylist,dev,mask):
-    """Nonconformity = fixed model's cross-entropy loss, evaluated ONLY on the monitoring
-    mask, a node split disjoint from BOTH the classifier's train/val mask (so the frozen
-    model has never seen these labels/gradients or used them for checkpoint selection) AND the downstream test mask used for the forget/cumulative/stale accuracy
-    comparison."""
     def loss_of(g,y):
         with torch.no_grad():
             gg=g.to(dev);return float(F.cross_entropy(model(gg,gg.ndata["x"].to(dev))[mask],y.to(dev)[mask]))

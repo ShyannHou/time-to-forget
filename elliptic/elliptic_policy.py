@@ -1,9 +1,3 @@
-"""Post-alarm memory policies on Elliptic, split at the 2017 shutdown
-(A = steps 1-42, B = steps 43-49).
-
-Arms: stale, no-forget (cumulative), soft-forget (rho = 0.3 / 0.5), hard-forget from
-scratch, and hard-forget warm-started from the stale model. Metric is illicit-F1 on
-regime-B test nodes; per-seed results are saved to JSON."""
 import os, json, pickle, numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
 def load(D): return pickle.load(open(f"{D}/elliptic_graphs.pkl","rb"))
@@ -12,7 +6,6 @@ class GCN(nn.Module):
         super().__init__();s.c1=GraphConv(i,h,allow_zero_in_degree=True);s.c2=GraphConv(h,c,allow_zero_in_degree=True);s.dp=nn.Dropout(d)
     def forward(s,g,x):return s.c2(g,s.dp(F.relu(s.c1(g,x))))
 def train(specs,val,in_dim,dev,wt,hidden=128,lr=5e-3,wd=5e-4,ep=150,init=None):
-    """specs = list of (graphs,x_list,y_list,mask,weight)."""
     m=GCN(in_dim,hidden,2).to(dev)
     if init is not None: m.load_state_dict(init)
     o=torch.optim.Adam(m.parameters(),lr=lr,weight_decay=wd);best=-1;bs=None

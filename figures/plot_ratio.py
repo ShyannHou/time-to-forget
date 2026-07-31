@@ -1,6 +1,3 @@
-"""Equal-training-size ratio sweeps for SBM (concept and reorder) and Elliptic.
-
-All plotted values and annotations are read from the corresponding result files."""
 import json, os, matplotlib;matplotlib.use("Agg");import matplotlib.pyplot as plt,numpy as np
 os.makedirs("figures/out", exist_ok=True)
 good="#2E8B57";bad="#C0392B";orange="#E67E22";blue="#2C6FBB";purple="#7D3C98"

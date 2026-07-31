@@ -29,8 +29,6 @@ class GCN(nn.Module):
     def forward(s,g,x):return s.c2(g,s.dp(F.relu(s.c1(g,x))))
 
 def fit_pointwise_ref(refX):
-    """Fix standardization + RBF bandwidth from the reference set ONCE; both are then
-    frozen and reused for every subsequent T_t computation."""
     mu=refX.mean(0);sd=refX.std(0)+1e-9;Rz=(refX-mu)/sd
     d=cdist(Rz,Rz);med=np.median(d)+1e-9;gamma=1/(2*med**2)
     K=np.exp(-gamma*d**2);m=len(Rz)
@@ -38,7 +36,6 @@ def fit_pointwise_ref(refX):
     return {"mu":mu,"sd":sd,"gamma":gamma,"krr_term":krr_term,"Rz":Rz,"m":m}
 
 def pointwise_score(z,ref_stats):
-    """Literal Eq.2: T_t = (1/(m(m-1))) sum_{i!=i'} k(ref_i,ref_i') + k(z,z) - (2/m) sum_i k(ref_i,z)."""
     zz=(z-ref_stats["mu"])/ref_stats["sd"]
     cross=np.exp(-ref_stats["gamma"]*np.sum((ref_stats["Rz"]-zz)**2,axis=1))
     return ref_stats["krr_term"]+1.0-(2.0/ref_stats["m"])*cross.sum()
@@ -47,7 +44,6 @@ def score_stream_pointwise(ref_stats,graphs):
     return [pointwise_score(gembed(g),ref_stats) for g in graphs]
 
 def run_cusum(scores,cal,h):
-    """Paper's literal Eq.6: C_t = max(0, C_{t-1} + log f(p_t)), f(p)=-log(p) (log-surprisal)."""
     cal=np.array([max(c,0) for c in cal]);nc=len(cal);S=0.0
     for t,sc in enumerate(scores):
         p=(1+int((cal>=max(sc,0)).sum()))/(nc+1);S=max(0.0,S+np.log(max(-np.log(p),1e-12)))
@@ -55,8 +51,6 @@ def run_cusum(scores,cal,h):
     return None
 
 def eval_detector(name,cal,score_in,score_change):
-    """Identical protocol to sbm_arl2.py's eval_detector: independent
-    selection/evaluation Monte-Carlo batches, 95% CI, censoring rate."""
     hs=np.arange(0.2,10,0.1);arl={h:[] for h in hs}
     for r in range(MC):
         sc=score_in(r)

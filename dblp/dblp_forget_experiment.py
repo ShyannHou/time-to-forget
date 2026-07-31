@@ -24,7 +24,6 @@ class GCN(nn.Module):
         return self.c2(g, h)
 
 def train_model(specs, val_specs, in_dim, n_cls, args, dev, init_state=None):
-    """specs / val_specs: list of (g, x, y, mask). Joint multi-graph training."""
     model = GCN(in_dim, args.hidden, n_cls, args.dropout).to(dev)
     if init_state is not None:
         model.load_state_dict(init_state)

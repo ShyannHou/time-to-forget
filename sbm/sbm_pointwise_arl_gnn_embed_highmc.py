@@ -1,20 +1,3 @@
-"""Higher-fidelity ARL calibration for the GCN-embedding pointwise connectivity
-detector: independent, non-overlapping Monte Carlo pools for threshold
-selection vs. evaluation (already the case in sbm_pointwise_arl_gnn_embed.py),
-but with MC_SELECT/MC_EVAL raised from 30 to 200/500 and the horizon raised
-from 300 to 1000, plus explicit censoring-rate and restricted-mean-run-length
-reporting instead of silently treating an unfired run as ARL=horizon.
-
-Status: written but NOT executed (MC=200/500 at horizon=1000 is roughly
-25-30x the compute of the MC=30/horizon=300 version already run and reported
-in results/sbm/sbm_pointwise_arl_gnn_embed_results.json; that file remains the
-source for Table 2 and Figure 2). This script is provided so the higher-MC
-protocol can be run when time allows, without touching the already-verified
-production script/results.
-
-Everything except the Monte Carlo constants and the eval_detector output
-fields is identical to sbm_pointwise_arl_gnn_embed.py.
-"""
 import argparse, json, numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
 from scipy.spatial.distance import cdist

@@ -1,10 +1,3 @@
-"""Equal-training-size control for the SBM forgetting experiment.
-
-Each arm receives a fixed budget of 40 training graphs; rho is the fraction drawn
-from regime A, so rho = 0 is forget and rho = 1 is stale. Graphs are pooled into a
-single flat list so each contributes to the loss in proportion to its count, matching
-the cumulative arm used elsewhere. Sweeping rho separates a genuine forgetting
-benefit from a training-set-size effect."""
 import json, numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
 N=100; NG=100; SEEDS=5; EP=100; Gbud=40

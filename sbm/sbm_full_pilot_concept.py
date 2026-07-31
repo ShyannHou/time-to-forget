@@ -1,23 +1,3 @@
-"""Pilot-graph concept-label construction: addresses the retrospective /
-transductive labeling issue in sbm_full.py's "concept" change type, where
-degree_labels_avg(B, K) averages degree over the SAME B graphs later used for
-training/monitoring/test -- so even the first B graph's label depends on B
-graphs that, in an online setting, have not arrived yet.
-
-Fix: the label rule is instead computed once from an INDEPENDENT pilot set of
-graphs (drawn from the same regime-B distribution, via a disjoint RNG stream
-that never enters training/monitoring/test), then applied as a fixed rule to
-the actual B graphs before any of them are used.
-
-Status: written but NOT executed. This does NOT replace sbm_full.py, which
-remains the source of the currently-reported Table 2 concept-change numbers
-(computed with the retrospective construction) -- running this script and
-adopting its labels would change those numbers and requires a full rerun plus
-a paper update, which is out of scope given time constraints. Until that
-rerun happens, the retrospective-labeling caveat should be disclosed in the
-paper/README rather than silently fixed here. Reuses gen/degree_labels_avg/
-GCN/train/evalacc from sbm_full.py unchanged.
-"""
 import argparse, json
 import numpy as np, torch
 from sbm_full import N, NG, PAPER, CBASE, gen, degree_labels_avg, GCN, train, evalacc

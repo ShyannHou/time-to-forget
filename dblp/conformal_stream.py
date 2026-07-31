@@ -1,9 +1,3 @@
-"""Unsupervised conformal + CUSUM change detection on a per-timestep graph stream.
-
-Scores each snapshot by RBF-MMD between its node-feature distribution and an
-in-control reference, converts the score to a conformal p-value, and accumulates
-evidence with CUSUM. Supports the Elliptic (49 steps) and DBLP (31 steps) streams.
-Saves scores, p-values and CUSUM arrays to .npz."""
 import os, argparse, pickle
 import numpy as np, torch
 
@@ -15,15 +9,6 @@ def rbf_mmd2(X, Y, gamma):
     return float(sxx+syy-2*Kxy.mean())
 
 def bootstrap_threshold(cal_pv, horizon, rng, target_alpha=0.10, n_boot=1000, block=2):
-    """Calibrate the alarm threshold from the held-out in-control calibration
-    p-values themselves, instead of using an illustrative hardcoded constant. Block-
-    bootstrap resamples (block size `block`, to retain a little of the in-control serial
-    dependence) synthetic in-control monitoring streams of the true monitoring length, runs
-    the same Eq.6 CUSUM accumulator on each, and sets the threshold to the (1-target_alpha)
-    quantile of the resulting max-CUSUM-reached distribution -- i.e. the threshold a
-    genuinely in-control stream of this length would cross with probability ~target_alpha.
-    Caveat: with only len(cal_pv) held-out in-control timesteps for real data, this is a
-    small-sample calibration, not a substitute for a long independent in-control record."""
     n=len(cal_pv); maxes=[]
     for _ in range(n_boot):
         idx=[]

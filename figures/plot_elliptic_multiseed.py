@@ -1,8 +1,3 @@
-"""Five-seed overlay of the Elliptic supervised detector.
-
-Plots all seed CUSUM trajectories for the short (train 1-20, calibration 21-30) and
-event-aligned (train 1-30, calibration 31-42) configurations. The true event at
-step 43 is marked; no threshold line is drawn."""
 import os, matplotlib;matplotlib.use("Agg");import matplotlib.pyplot as plt,numpy as np
 bad="#C0392B"
 cols=["#2E8B57","#2C6FBB","#E67E22","#7D3C98","#C0392B"]

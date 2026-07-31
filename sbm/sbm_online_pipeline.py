@@ -1,41 +1,3 @@
-"""Alarm-triggered end-to-end SBM pipeline: a single continuous graph stream is
-monitored online by the conformal-CUSUM connectivity detector, and memory
-policies are triggered by the ACTUAL alarm time (not the true change time),
-except for the oracle-hard arm which uses the true change time instead of the
-detector as an upper-bound reference.
-
-This is a reference implementation of Algorithm 3 (detect -> renew reference
-and calibration -> retrain -> reset CUSUM -> resume monitoring) for a
-two-change stream: regime A (in-control) -> regime B (reorder change) ->
-regime C (reverts to regime A's distribution, a second change). Renewal is
-performed INLINE, in a single forward pass over the stream: as soon as the
-burn-in window following an alarm ends, the model, reference set, calibration
-set, and threshold are all rebuilt from the burn-in graphs, CUSUM is reset to
-0, and monitoring resumes with the new state for the rest of the stream --
-so a SECOND alarm (at the A/C boundary) is evaluated against the just-renewed
-(B-calibrated) reference, not the original (A-calibrated) one.
-
-Status: written but NOT executed end-to-end (no run/verification pass); see
-README.md. It reuses the SBM generator, GCN, embedding, pointwise-score, and
-CUSUM building blocks from sbm_pointwise_arl_gnn_embed.py, which HAVE been run
-and validated -- only the online renewal/state-machine logic here is new and
-unverified.
-
-Simplifications relative to a full Algorithm 3 implementation:
-  - Only the connectivity-change (kernel-MMD) detector is wired up; the
-    concept-change (predictive-loss) detector is not included in this script.
-  - If an alarm fires very late in a regime, the burn-in window may run past
-    the next true change point (flagged via 'burn_in_crossed_regime').
-  - recovery_time uses a simple threshold rule (first time post-renewal
-    accuracy reaches 90% of that cycle's own steady-state accuracy), not a
-    formal changepoint-recovery estimator.
-  - soft-forget mixes pre- and post-alarm data by loss reweighting (as in
-    elliptic_policy.py / sbm_policy.py), not a formal replay buffer.
-  - All four arms (oracle-hard, detected-hard, detected-soft, no-forget) use
-    the SAME alarm-timing mechanism (true change time for oracle-hard, the
-    actual detector for the other three) and differ only in what data they
-    retrain on after the burn-in window.
-"""
 import json, argparse
 import numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
@@ -116,9 +78,6 @@ def cusum_step(prev_S, sc, cal):
 
 def calibrate_threshold(model, ref_stats, cal, base, in_control_intra, q, K, rng,
                          target_arl=TARGET_ARL, mc=MC_THRESH, horizon=600):
-    """Selects h* by Monte Carlo simulation of streams from the CURRENT in-control
-    distribution (the just-renewed regime), matching the ARL0 calibration protocol
-    used elsewhere in the repo."""
     hs = np.arange(0.2, 10, 0.1); arl = {h: [] for h in hs}
     for r in range(mc):
         srng = np.random.default_rng(rng.integers(0, 2 ** 31))
@@ -135,7 +94,6 @@ def calibrate_threshold(model, ref_stats, cal, base, in_control_intra, q, K, rng
 
 
 def train_gcn(graphs, labels, epochs, mb, mb_rng, dev, init=None, weights=None):
-    """weights: optional per-graph loss weight (for soft-forget); default all-1."""
     K = int(labels.max().item()) + 1
     m = GCN(K).to(dev)
     if init is not None: m.load_state_dict(init)
@@ -158,11 +116,6 @@ def eval_acc(model, g, labels, dev):
 
 
 def run_seed(K, seed, policy, len_A=100, len_B=150, len_C=150, dev=None):
-    """Single forward pass over the stream for ONE policy arm. Renewal (retrain +
-    rebuild reference/calibration/threshold + reset CUSUM) happens inline as soon
-    as a burn-in window completes, so later parts of the SAME pass use the
-    just-renewed state -- this is what lets a second alarm be evaluated against
-    the renewed (not original) reference."""
     dev = dev or torch.device("cpu")
     p0, p1r, q = PAPER[K][0], REORDER[K], PAPER[K][2]
     base = np.concatenate([np.full(len(ix), k) for k, ix in enumerate(np.array_split(np.arange(N), K))])

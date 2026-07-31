@@ -1,18 +1,7 @@
-"""Supervised detection score on the Elliptic stream.
-
-Trains a GCN on steps 1..train_end, freezes it, and records per-step illicit-recall
-and cross-entropy loss on each snapshot's labeled nodes. Steps train_end+1..cal_end
-form the calibration null and are disjoint from training; monitoring starts at
-cal_end with the CUSUM reset to zero. Standardization uses training-period statistics
-only. Results, including a bootstrap-calibrated threshold, are saved to .npz."""
 import os, argparse, pickle, numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv
 def load(D): return pickle.load(open(f"{D}/elliptic_graphs.pkl","rb"))
 def bootstrap_threshold(cal_scores,horizon,rng,target_alpha=0.10,n_boot=1000,block=2):
-    """Calibrate the alarm threshold from the held-out calibration losses
-    themselves (leave-one-out conformal p-values + block bootstrap over the monitoring
-    horizon), instead of using the illustrative constant 3.0 everywhere. Small-sample
-    caveat: only len(cal_scores) held-out timesteps back this calibration."""
     cal_scores=np.array(cal_scores);n=len(cal_scores)
     pv_pool=np.array([(1+int((np.delete(cal_scores,i)>=cal_scores[i]).sum()))/(n) for i in range(n)])
     maxes=[]
@@ -70,7 +59,6 @@ def main():
     # Calibration null = ts21-30 (CAL_END), which the model NEVER trained on (no
     # train/calibration overlap). Monitoring starts at CAL_END (CUSUM reset there).
     def monitor(score,cal_end=CAL_END):
-        """Paper's literal Eq.6 conformal CUSUM: C_t=max(0,C_{t-1}+log f(p_t)), f(p)=-log(p)."""
         cal=score[TRAIN_END:cal_end]
         S=0.0;out=[]
         for t in range(cal_end,len(score)):

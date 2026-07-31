@@ -1,4 +1,3 @@
-"""Build 49 per-timestep DGL graphs from the Elliptic Bitcoin dataset."""
 import pandas as pd, numpy as np, torch, dgl, pickle, os
 D=os.environ.get("ELLIPTIC_RAW_DIR", "data/elliptic_raw")
 OUT_DIR=os.environ.get("ELLIPTIC_OUT_DIR", "data/elliptic")

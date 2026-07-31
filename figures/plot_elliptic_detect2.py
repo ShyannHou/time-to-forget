@@ -1,8 +1,3 @@
-"""Elliptic detection with a short versus an event-aligned reference window.
-
-Compares evidence trajectories when the reference/calibration window covers only the
-first 30 steps against one covering nearly all pre-shutdown history. No threshold
-line is drawn; crossing times at several thresholds are reported separately."""
 import os, matplotlib;matplotlib.use("Agg");import matplotlib.pyplot as plt,numpy as np
 bad="#C0392B";good="#2E8B57";blue="#2C6FBB";orange="#E67E22"
 ell30=np.load("results/elliptic/conformal_elliptic_ref30.npz");ell42=np.load("results/elliptic/conformal_elliptic_ref42.npz")

@@ -1,7 +1,3 @@
-"""Per-class SBM figures for K = 2, 3, 5.
-
-Each figure shows the unsupervised detection MMD, the frozen-model supervised loss,
-and downstream accuracy for that class count's four change types."""
 import os, matplotlib;matplotlib.use("Agg");import matplotlib.pyplot as plt,numpy as np,json
 os.makedirs("figures/out", exist_ok=True)
 good="#2E8B57";bad="#C0392B";orange="#E67E22";blue="#2C6FBB"

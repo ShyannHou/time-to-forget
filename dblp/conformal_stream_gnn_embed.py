@@ -48,8 +48,6 @@ class GCN(nn.Module):
 
 
 def train_frozen_gcn(graphs, incontrol, hid, epochs, lr, wd, dev, seed=0):
-    """Trains on steps 0..incontrol-1 only, using each graph's own labels (y>=0 mask),
-    matching the frozen-encoder-trained-on-in-control-data protocol used throughout."""
     torch.manual_seed(seed)
     in_dim = graphs[0].ndata["x"].shape[1]
     n_cls = int(max(int(g.ndata["y"].max()) for g in graphs[:incontrol] if (g.ndata["y"] >= 0).any()) + 1)

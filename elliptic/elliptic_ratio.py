@@ -1,10 +1,3 @@
-"""Equal-training-size control for the Elliptic forgetting experiment.
-
-Every arm trains on exactly M labeled nodes; rho is the fraction drawn from the
-pre-shutdown regime A, so rho = 0 is forget and rho = 1 is stale. Validation is
-rho-matched. Metric is illicit-F1 on a fixed regime-B test set. Comparing rho = 0
-against rho = 0.9 at equal M separates 'old data is harmful' from 'old data is
-simply more data'."""
 import os, json, argparse, pickle
 import numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv

@@ -25,7 +25,6 @@ class GCN(nn.Module):
     def __init__(s,K):super().__init__();s.c1=GraphConv(4,64,allow_zero_in_degree=True);s.c2=GraphConv(64,K,allow_zero_in_degree=True);s.dp=nn.Dropout(0.5)
     def forward(s,g,x):return s.c2(g,s.dp(F.relu(s.c1(g,x))))
 def train(specs,vg,vl,vm,K,dev,ep=EP,mb=10,init=None,mb_rng=None):
-    """specs = list of (graphs, labels, mask, weight)."""
     if mb_rng is None: mb_rng=np.random.default_rng() 
     m=GCN(K).to(dev)
     if init is not None: m.load_state_dict(init)         # warm-start

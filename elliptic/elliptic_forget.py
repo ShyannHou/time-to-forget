@@ -1,8 +1,3 @@
-"""Elliptic (Bitcoin) downstream forgetting experiment across the 2017 shutdown.
-
-Binary illicit-vs-licit node classification under three memory arms (stale,
-cumulative, forget). Reports accuracy and illicit-F1 on regime-B test nodes and
-saves per-seed results to JSON."""
 import os, json, argparse, pickle
 import numpy as np, torch, torch.nn as nn, torch.nn.functional as F, dgl
 from dgl.nn import GraphConv

@@ -238,7 +238,10 @@ def run_seed(K, seed, policy, len_A=100, len_B=150, len_C=150, dev=None):
             crossed = (next_change_ix + 1 < len(true_changes) and t + 1 + BURN_IN > true_changes[next_change_ix + 1])
             cycles.append({"true_change_time": true_t, "alarm_time": t,
                             "detection_delay": (t - true_t) if true_t is not None else None,
-                            "false_alarm": (true_t is not None and t < true_t),
+                            # an alarm with no true change left to correspond to (all true
+                            # changes already triggered a prior cycle) is also a false alarm,
+                            # not the default False that "true_t is None" would otherwise imply
+                            "false_alarm": (true_t is None or t < true_t),
                             "burn_in_crossed_regime": crossed, "renewal_start_index": t,
                             "_pre_graphs": pre_alarm_graphs})
             burn_in_start = t + 1; burn_in_until = t + 1 + BURN_IN
@@ -273,7 +276,11 @@ def main():
                                                           # second renewal cycle to actually complete inline
     ap.add_argument("--out", default="results/sbm/sbm_online_pipeline_results.json")
     a = ap.parse_args()
-    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # kept on CPU throughout: SBM graphs here are tiny (N=100 nodes), and gnn_embed()
+    # does not move its graph argument to device, matching the CPU-only convention
+    # already used in sbm_pointwise_arl_gnn_embed.py -- forcing GPU here without also
+    # fixing that call site would reintroduce a device-mismatch crash.
+    dev = torch.device("cpu")
 
     policies = ["oracle-hard", "detected-hard", "detected-soft", "no-forget"]
     all_results = {p: [] for p in policies}
@@ -288,9 +295,11 @@ def main():
         first_delays = [c["cycles"][0]["detection_delay"] for c in recs if c["cycles"] and c["cycles"][0]["detection_delay"] is not None]
         first_accs = [c["cycles"][0]["mean_post_change_accuracy"] for c in recs if c["cycles"] and c["cycles"][0].get("mean_post_change_accuracy") is not None]
         n_alarms = [c["n_alarms"] for c in recs]
+        all_flags = [cyc["false_alarm"] for c in recs for cyc in c["cycles"]]
         summary[p] = {"mean_first_detection_delay": float(np.mean(first_delays)) if first_delays else None,
                        "mean_first_cycle_post_change_accuracy": float(np.mean(first_accs)) if first_accs else None,
-                       "mean_n_alarms": float(np.mean(n_alarms))}
+                       "mean_n_alarms": float(np.mean(n_alarms)),
+                       "false_alarm_rate_over_all_cycles": float(np.mean(all_flags)) if all_flags else None}
         print(f"{p:<16} {summary[p]}")
 
     json.dump({"per_seed": all_results, "summary": summary}, open(a.out, "w"), indent=2)

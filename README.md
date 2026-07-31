@@ -180,14 +180,37 @@ those files, so a rerun of an upstream script is reflected in the figures automa
   transductive construction: in a genuinely online setting the very first regime-B graph
   would not yet have access to later regime-B graphs when its label is assigned. The
   reported Table 2 concept-change numbers use this construction.
-- Three additional scripts are included as reference implementations but have **not**
-  been executed end-to-end (no run/verification pass), and do not affect any number
-  reported above: `sbm/sbm_online_pipeline.py` (alarm-triggered detect-renew-adapt
-  pipeline with CUSUM reset and reference/calibration renewal after each alarm, vs. the
-  known-A/B-boundary policy comparisons used everywhere else), `sbm/sbm_pointwise_arl_gnn_embed_highmc.py`
-  (raises the ARL calibration Monte Carlo from 30 to 200/500 selection/evaluation runs
-  with explicit censoring-rate and restricted-mean-run-length reporting), and
-  `sbm/sbm_full_pilot_concept.py` (defines concept-change labels from an independent
+- `sbm/sbm_pointwise_arl_gnn_embed_highmc.py` raises the ARL calibration Monte Carlo
+  from 30 to 80/150 selection/evaluation runs (horizon 300 -> 600) with explicit
+  censoring-rate and restricted-mean-run-length reporting
+  (`results/sbm/sbm_pointwise_arl_gnn_embed_highmc_results.json`, executed). Achieved
+  ARL0 moves to 87/97/91 for K=2/3/5 (vs. 122/65/97 at MC=30) and censoring drops to
+  0/150 at every K -- notably, K=3's achieved ARL goes from the furthest off target
+  (65) to the closest (97), consistent with the MC=30 selection batch being genuinely
+  noisy rather than K=3 being an outlier.
+- `sbm/sbm_full_pilot_concept.py` defines concept-change labels from an independent
   pilot graph set instead of the same B graphs used for training/monitoring/test,
-  addressing the retrospective-labeling caveat above -- see the docstring of each file
-  for exact scope and status).
+  addressing the retrospective-labeling caveat above
+  (`results/sbm/sbm_full_pilot_concept_results.json`, executed). The qualitative
+  conclusion (forget beats cumulative) is unchanged at every K, but the margin shrinks
+  substantially at K=2 (forget-cumulative gap 0.222 -> 0.100) and K=5 (0.331 -> 0.288),
+  because cumulative's accuracy rises once B's labels no longer implicitly encode
+  information from the exact B graphs used downstream. This result is NOT what Table 2
+  reports; Table 2 uses the retrospective construction described above.
+- `sbm/sbm_online_pipeline.py` implements the alarm-triggered detect-renew-adapt
+  pipeline with CUSUM reset and reference/calibration renewal after each alarm (vs. the
+  known-A/B-boundary policy comparisons used everywhere else), executed for 5 seeds at
+  each K (`results/sbm/sbm_online_pipeline_K{2,3,5}_results.json`). The oracle-hard arm
+  (true change time, not detected) is clean at every seed and K (0-3 step delay, no
+  false alarms). The detector-triggered arms are NOT reliable at this pipeline's
+  default MC_THRESH=30 per-renewal threshold calibration: across K in {2,3,5}, about
+  60% of alarms across seeds are false alarms (firing well before the corresponding
+  true change, sometimes during what should be in-control monitoring), the same
+  MC=30 calibration-noise issue documented for the ARL0 table above, now compounded by
+  needing a fresh calibration after every renewal from only 70-90 burn-in graphs. This
+  pipeline should not be read as a validated "detection reliably triggers adaptation"
+  result; it demonstrates the renewal mechanism works mechanically (CUSUM resets,
+  reference/calibration rebuild, a second alarm can fire against the renewed
+  reference) but the false-alarm rate needs the higher-MC calibration above (or more
+  burn-in graphs) plumbed into `calibrate_threshold` before it is a reliable detector,
+  which was not done here given time constraints.
